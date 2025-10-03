@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'clientes_pantalla.dart';
 
 class NavigationMenu extends StatelessWidget {
   final String selectedItem;
@@ -14,12 +15,22 @@ class NavigationMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 250,
-      color: Colors.white,
+      color: const Color.fromARGB(
+        255,
+        20,
+        39,
+        75,
+      ), // Changed from white to black
       child: Column(
         children: [
           Container(
             height: 80,
-            color: Colors.teal,
+            color: const Color.fromARGB(
+              255,
+              20,
+              39,
+              75,
+            ), // Changed from teal to black to match the image
             child: const Row(
               children: [
                 Padding(
@@ -37,30 +48,45 @@ class NavigationMenu extends StatelessWidget {
             child: ListView(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.dashboard),
-                  title: const Text('Dashboard'),
+                  leading: const Icon(Icons.dashboard, color: Colors.white),
+                  title: const Text(
+                    'Dashboard',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   selected: selectedItem == 'Dashboard',
                   onTap: () => onItemSelected('Dashboard'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.home),
-                  title: const Text('Clientes'),
+                  leading: const Icon(Icons.home, color: Colors.white),
+                  title: const Text(
+                    'Clientes',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   selected: selectedItem == 'Clientes',
                   onTap: () => onItemSelected('Clientes'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.shopping_bag),
-                  title: const Text('Productos'),
+                  leading: const Icon(Icons.shopping_bag, color: Colors.white),
+                  title: const Text(
+                    'Productos',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   onTap: () => onItemSelected('Productos'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.point_of_sale),
-                  title: const Text('Ventas'),
+                  leading: const Icon(Icons.point_of_sale, color: Colors.white),
+                  title: const Text(
+                    'Ventas',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   onTap: () => onItemSelected('Ventas'),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.bar_chart),
-                  title: const Text('Estadísticas'),
+                  leading: const Icon(Icons.bar_chart, color: Colors.white),
+                  title: const Text(
+                    'Estadísticas',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   onTap: () => onItemSelected('Estadísticas'),
                 ),
               ],

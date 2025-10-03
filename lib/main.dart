@@ -1,15 +1,16 @@
 import 'dart:ui';
 
-import 'package:estereo_bose/productos.dart';
+import 'package:estereo_bose/pantallas/principal_pantalla.dart';
+import 'package:estereo_bose/pantallas/productos_pantalla.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
-
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
     url: 'https://fzvfhnekmculrrnbsdqu.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6dmZobmVrbWN1bHJybmJzZHF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODA2NzQsImV4cCI6MjA3NDk1NjY3NH0.lWVwSZIHnVuzYjTIj-r1IlwnvvlsHGxwm3gPZUA7puM'
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6dmZobmVrbWN1bHJybmJzZHF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzODA2NzQsImV4cCI6MjA3NDk1NjY3NH0.lWVwSZIHnVuzYjTIj-r1IlwnvvlsHGxwm3gPZUA7puM',
   );
   runApp(const MyApp());
 }
@@ -39,11 +40,12 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const PrincipalPantalla(),
     );
   }
 }
 
+/*
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -75,36 +77,39 @@ class _MyHomePageState extends State<MyHomePage> {
       _counter++;
     });
   }
-  Future<void> insertarCliente() async {
-  final supabase = Supabase.instance.client; //
-  final response = await supabase.from('clientes').insert({
-    'nombre': 'Carlos',
-    'ciudad': "Peñasco",
-    'edad': '25',
-    'sexo': 'M'
-  });
 
-  print(response);
-}
+  Future<void> insertarCliente() async {
+    final supabase = Supabase.instance.client; //
+    final response = await supabase.from('clientes').insert({
+      'nombre': 'Carlos',
+      'ciudad': "Peñasco",
+      'edad': '25',
+      'sexo': 'M',
+    });
+
+    print(response);
+  }
 
   Future<void> insertarProducto() async {
-  final supabase = Supabase.instance.client; //
-  final response = await supabase.from('productos').insert({
-    'nombre': 'Maruchan',
-    'categoria': "Alimentos",
-    'precio': '25',
-  });
+    final supabase = Supabase.instance.client; //
+    final response = await supabase.from('productos').insert({
+      'nombre': 'Maruchan',
+      'categoria': "Alimentos",
+      'precio': '25',
+    });
 
-  print(response);
-}
+    print(response);
+  }
+
   Future<void> editarProducto() async {
-  final supabase = Supabase.instance.client; //
-  final response = await supabase.from('productos')
-    .update({'categoria': "Tengo Hambre"})
-    .eq('id', 1);
+    final supabase = Supabase.instance.client; //
+    final response = await supabase
+        .from('productos')
+        .update({'categoria': "Tengo Hambre"})
+        .eq('id', 1);
 
-  print(response);
-}
+    print(response);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,3 +173,4 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+*/
