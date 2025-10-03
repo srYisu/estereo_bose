@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:estereo_bose/productos.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -86,6 +87,25 @@ class _MyHomePageState extends State<MyHomePage> {
   print(response);
 }
 
+  Future<void> insertarProducto() async {
+  final supabase = Supabase.instance.client; //
+  final response = await supabase.from('productos').insert({
+    'nombre': 'Maruchan',
+    'categoria': "Alimentos",
+    'precio': '25',
+  });
+
+  print(response);
+}
+  Future<void> editarProducto() async {
+  final supabase = Supabase.instance.client; //
+  final response = await supabase.from('productos')
+    .update({'categoria': "Tengo Hambre"})
+    .eq('id', 1);
+
+  print(response);
+}
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -128,11 +148,20 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Productos()),
+                );
+              },
+              child: Text('Ir a Productos'),
+            ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: insertarCliente,
+        onPressed: insertarProducto,
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
