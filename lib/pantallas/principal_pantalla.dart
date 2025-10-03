@@ -26,7 +26,7 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> {
       case 'Clientes':
         return ClientesPage();
       case 'Productos':
-        return Productos();
+        return const ProductosPage();
       case 'Ventas':
         return const Center(child: Text('Ventas Content'));
       case 'Estadísticas':

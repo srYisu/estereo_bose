@@ -38,7 +38,9 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color.fromARGB(255, 50, 113, 231),
+        ),
       ),
       home: const PrincipalPantalla(),
     );
@@ -110,7 +112,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     print(response);
   }
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
