@@ -10,6 +10,6 @@ class VentasPageZZZ extends StatefulWidget {
 class _MyWidgetState extends State<VentasPageZZZ> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return const Placeholder(); // basura
   }
 }
