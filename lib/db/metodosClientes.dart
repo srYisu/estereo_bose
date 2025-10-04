@@ -21,6 +21,10 @@ class Metodosclientes {
     await supabase.from('clientes').delete().eq('id', id);
   }
 
+  Future<void> eliminarClientes_TrueFalse(int id) async{
+    await supabase.from('clientes').update({'activo': false}).eq('id', id);
+  }
+
   Future<void> actualizarCliente(
     int id, {
     required String nombre,
@@ -35,11 +39,12 @@ class Metodosclientes {
       'sexo': sexo,
     }).eq('id', id);
   }
-
+//
   Stream<List<Map<String, dynamic>>> streamClientes() {
     return supabase
         .from('clientes')
         .stream(primaryKey: ['id'])
+        .eq('activo', true)
         .order('id')
         .execute()
         .map((rows) => rows.map((r) => r as Map<String, dynamic>).toList());

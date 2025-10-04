@@ -86,7 +86,7 @@ class _ClientesPageState extends State<ClientesPage> {
   }
 
   Future<void> _eliminarCliente(int id) async {
-    await clientesService.eliminarCliente(id);
+    await clientesService.eliminarClientes_TrueFalse(id);
   }
 
   Map<String, int> _calculateClientsByCity(List<Map<String, dynamic>> clients) {
