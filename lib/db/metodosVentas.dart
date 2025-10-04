@@ -8,12 +8,14 @@ class MetodosVentas {
     required int id_producto,
     required int cantidad,
     required DateTime fecha,
+    required double total,
   }) async {
     await supabase.from('ventas').insert({
       'id_cliente': id_cliente,
       'id_producto': id_producto,
       'cantidad': cantidad,
       'fecha': fecha.toIso8601String(),
+      'total': total,
     });
   }
 
@@ -27,10 +29,11 @@ class MetodosVentas {
     required int id_producto,
     required int cantidad,
     required DateTime fecha,
+    required double total,
   }) async {
     await supabase
         .from('ventas')
-        .update({'id_cliente': id_cliente, 'id_producto': id_producto, 'cantidad': cantidad, 'fecha': fecha.toIso8601String()})
+        .update({'id_cliente': id_cliente, 'id_producto': id_producto, 'cantidad': cantidad, 'fecha': fecha.toIso8601String(), 'total': total})
         .eq('id', id);
   }
 

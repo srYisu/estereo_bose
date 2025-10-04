@@ -39,4 +39,9 @@ class MetodosProductos {
         .execute()
         .map((rows) => rows.map((r) => r as Map<String, dynamic>).toList());
   }
+
+  Future<Map<String, dynamic>?> obtenerProductoPorId(int id) async {
+    final response = await supabase.from('productos').select().eq('id', id).single();
+    return response as Map<String, dynamic>?;
+  }
 }
