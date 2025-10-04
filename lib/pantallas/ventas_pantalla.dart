@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../db/metodosVentas.dart';
 import '../db/metodosClientes.dart';
 import '../db/metodosProductos.dart';
+import '../db/metodosDetallesVentas.dart';
 
 class VentasPage extends StatefulWidget {
   const VentasPage({super.key});
@@ -15,6 +16,7 @@ class _VentasPageState extends State<VentasPage> {
   final MetodosVentas ventasService = MetodosVentas();
   final Metodosclientes clientesService = Metodosclientes();
   final MetodosProductos productosService = MetodosProductos();
+  final MetodosDetallesVentas detallesVentaService = MetodosDetallesVentas();
   final TextEditingController _searchController = TextEditingController();
   String _searchTerm = '';
   int? _selectedIdCliente; // store selected cliente across dialog
@@ -36,10 +38,9 @@ class _VentasPageState extends State<VentasPage> {
         final items = clientes.map((cliente) {
           final id = cliente['id'] as int?;
           final nombre = cliente['nombre'] ?? '';
-          final apellido = cliente['apellido'] ?? '';
           return DropdownMenuItem<int>(
             value: id,
-            child: Text('$nombre $apellido'),
+            child: Text('$nombre'),
           );
         }).toList();
 
@@ -98,6 +99,64 @@ class _VentasPageState extends State<VentasPage> {
       },
     );
   }
+
+  void _verProductosComprados(int id) async {
+    // Obtener los detalles de venta relacionados con el id de venta
+    final detalles = await detallesVentaService.obtenerDetallesVentasPorVentaId(id);
+    if (detalles == null || detalles.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Productos Comprados'),
+          content: const Text('No se encontraron productos para esta venta.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Obtener los nombres de los productos relacionados
+    List<String> nombresProductos = [];
+    for (var detalle in detalles) {
+      final idProducto = detalle['id_producto'];
+      final producto = await productosService.obtenerProductoPorId(idProducto);
+      if (producto != null) {
+        nombresProductos.add("${producto['nombre']} - Cantidad: ${detalle['cantidad']}");
+      }
+    }
+
+    // Mostrar el diálogo con la lista vertical de nombres de productos
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Productos Comprados'),
+        content: SizedBox(
+          width: 300,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: nombresProductos.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(nombresProductos[index]),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _mostrarFormulario({Map<String, dynamic>? venta}) {
     int? selectedIdCliente = venta?['id_cliente'] ?? _selectedIdCliente;
     int? selectedIdProducto = venta?['id_producto'] ?? _selectedIdProducto;
@@ -165,6 +224,7 @@ class _VentasPageState extends State<VentasPage> {
                   id_producto: _selectedIdProducto ?? selectedIdProducto ?? 0,
                   cantidad: int.tryParse(cantidadController.text) ?? 0,
                   fecha: selectedFecha ?? DateTime.now(),
+                  total: 0.0,
                 );
               } else {
                 await ventasService.actualizarVentas(
@@ -173,6 +233,7 @@ class _VentasPageState extends State<VentasPage> {
                   id_producto: _selectedIdProducto ?? selectedIdProducto ?? 0,
                   cantidad: int.tryParse(cantidadController.text) ?? 0,
                   fecha: selectedFecha ?? DateTime.now(),
+                  total: 0.0,
                 );
               }
               // keep the selected id in state for next time
@@ -287,8 +348,7 @@ class _VentasPageState extends State<VentasPage> {
                           columns: const [
                             DataColumn(label: Text('ID')),
                             DataColumn(label: Text('ID Cliente')),
-                            DataColumn(label: Text('ID Producto')),
-                            DataColumn(label: Text('Cantidad')),
+                            DataColumn(label: Text('Monto Total')),
                             DataColumn(label: Text('Fecha')),
                             DataColumn(label: Text('Acciones')),
                           ],
@@ -297,8 +357,7 @@ class _VentasPageState extends State<VentasPage> {
                               cells: [
                                 DataCell(Text(venta['id'].toString())),
                                 DataCell(Text(venta['id_cliente'].toString())),
-                                DataCell(Text(venta['id_producto'].toString())),
-                                DataCell(Text(venta['cantidad'].toString())),
+                                DataCell(Text("€ ${venta['Total'].toString()}")),
                                 DataCell(Text(
                                   (venta['fecha'] as String).length >= 10
                                       ? (venta['fecha'] as String).substring(0, 10)
@@ -320,6 +379,10 @@ class _VentasPageState extends State<VentasPage> {
                                           color: Colors.red,
                                         ),
                                         onPressed: () => _eliminarVenta(venta['id']),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => _verProductosComprados(venta['id']), 
+                                        child: const Text('Ver Productos'),
                                       ),
                                     ],
                                   ),
