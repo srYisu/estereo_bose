@@ -99,7 +99,6 @@ class _VentasPageState extends State<VentasPage> {
     );
   }
   void _mostrarFormulario({Map<String, dynamic>? venta}) {
-    // initialize dialog-local selected id from state or passed venta
     int? selectedIdCliente = venta?['id_cliente'] ?? _selectedIdCliente;
     int? selectedIdProducto = venta?['id_producto'] ?? _selectedIdProducto;
     final cantidadController = TextEditingController(
@@ -116,7 +115,7 @@ class _VentasPageState extends State<VentasPage> {
             children: [
               const Text('Seleccionar Cliente:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              // show dropdown and keep selection local while editing
+
               listaClientes(),
               const SizedBox(height: 16),
               const Text('Seleccionar Producto:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -388,7 +387,6 @@ class _VentasPageState extends State<VentasPage> {
                         ),
                       ),
                     ),
-
                   ],
                 );
               },

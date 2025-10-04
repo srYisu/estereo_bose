@@ -97,26 +97,7 @@ class _ProductosPageState extends State<ProductosPage> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: productosService.streamProductos(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No hay productos"));
-          }
-
-          final productos = snapshot.data!;
-          final filteredProductos = productos.where((producto) {
-            final nombre = producto['nombre']?.toLowerCase() ?? '';
-            return nombre.contains(_searchTerm.toLowerCase());
-          }).toList();
-
-          final productsByCategory = _calculateProductsByCategory(productos);
-
-          return Column(
+      child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
@@ -167,7 +148,31 @@ class _ProductosPageState extends State<ProductosPage> {
               ),
               const SizedBox(height: 16),
               Expanded(
-                child: SingleChildScrollView(
+                child: StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: productosService.streamProductos(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(child: Text("No hay productos disponibles"));
+                    }
+
+                    final productos = snapshot.data!;
+                    final filteredProductos = productos.where((producto) {
+                      final nombre = producto['nombre']?.toLowerCase() ?? '';
+                      final categoria = producto['categoria']?.toLowerCase() ?? '';
+                      final searchLower = _searchTerm.toLowerCase();
+                      return nombre.contains(searchLower) ||
+                          categoria.contains(searchLower);
+                    }).toList();
+                    final productsByCategory = _calculateProductsByCategory(filteredProductos);
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     columns: const [
@@ -278,6 +283,9 @@ class _ProductosPageState extends State<ProductosPage> {
           );
         },
       ),
+          ),
+        ],
+      ),      
     );
   }
 }
