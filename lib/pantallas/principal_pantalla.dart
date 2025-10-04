@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'navegacion_widget.dart';
 import 'productos_pantalla.dart';
 import 'clientes_pantalla.dart';
+import 'estadisticas_pantalla.dart';
 
 class PrincipalPantalla extends StatefulWidget {
   const PrincipalPantalla({super.key});
@@ -24,7 +25,7 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> {
   Widget _getContent() {
     switch (_selectedItem) {
       case 'Dashboard':
-        return const Center(child: Text('Dashboard Content'));
+        return  EstadisticasPantalla();
       case 'Clientes':
         return ClientesPage();
       case 'Productos':
