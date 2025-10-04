@@ -1,3 +1,5 @@
+import 'package:estereo_bose/pantallas/ventas.dart';
+import 'package:estereo_bose/pantallas/ventas_pantalla.dart';
 import 'package:flutter/material.dart';
 import 'navegacion_widget.dart';
 import 'productos_pantalla.dart';
@@ -28,7 +30,7 @@ class _PrincipalPantallaState extends State<PrincipalPantalla> {
       case 'Productos':
         return const ProductosPage();
       case 'Ventas':
-        return const Center(child: Text('Ventas Content'));
+        return const VentasPage();
       case 'Estadísticas':
         return const Center(child: Text('Estadísticas Content'));
       default:
