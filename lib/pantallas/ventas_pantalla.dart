@@ -26,8 +26,9 @@ class _VentasPageState extends State<VentasPage> {
   String _searchTerm = '';
   int? _selectedIdCliente; // store selected cliente across dialog
   int? _selectedIdProducto; // store selected producto across dialog
-  // ahora guarda mapas con {'id': <int>, 'cantidad': <int>}
-  List<Map<String, int>> _productosAgregados = [];
+  int? _selectedIdDetallesVenta; // store selected producto across dialog
+  // ahora guarda mapas con {'id': <int>, 'cantidad': <int>, 'id_detalle': <int?>}
+  List<Map<String, int?>> _productosAgregados = [];
   //List<ProductosAgregados> _productosAgregados = [];
 
   int _currentPage = 0; // Current page index for pagination
@@ -377,18 +378,27 @@ class _VentasPageState extends State<VentasPage> {
                   total: total,
                 );
                 
+                // actualizar o insertar detalles según si ya existe id_detalle
                 for (var entry in _productosAgregados) {
                   final int? pid = entry['id'];
                   final int qty = entry['cantidad'] ?? 0;
                   if (pid == null || qty <= 0) continue;
-
-                  await detallesVentaService.actualizarDetallesVentas(
-                    venta['id_detalle'],                    
-                    id_producto: pid,
-                    id_venta: venta['id'],
-                    cantidad: qty,          
-                  );
-                }                  
+                  final int? detId = entry['id_detalle'];
+                  if (detId != null) {
+                    await detallesVentaService.actualizarDetallesVentas(
+                      detId,
+                      id_producto: pid,
+                      id_venta: venta['id'],
+                      cantidad: qty,
+                    );
+                  } else {
+                    await detallesVentaService.insertarDetallesVentas(
+                      id_producto: pid,
+                      id_venta: venta['id'],
+                      cantidad: qty,
+                    );
+                  }
+                }
               }
               setState(() {
                  _selectedIdCliente = _selectedIdCliente ?? selectedIdCliente;
@@ -485,7 +495,7 @@ class _VentasPageState extends State<VentasPage> {
   }
 
   Future<void> _eliminarVenta(int id) async {
-    await ventasService.elimiarVentas(id);
+    await ventasService.eliminarVentas(id);
   }
 
   Map<int, int> _calculateSalesByProduct(List<Map<String, dynamic>> ventas) {
