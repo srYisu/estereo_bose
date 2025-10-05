@@ -12,7 +12,7 @@ class EstadisticasPantalla extends StatefulWidget {
 class _EstadisticasPantallaState extends State<EstadisticasPantalla> {
   final supabase = Supabase.instance.client;
 
-  int cantidadVentasMes = 0;
+  int cantidadVentasHoy = 0;
   Map<String, dynamic>? clienteTopGasto;
   List<Map<String, dynamic>> clientesPorCiudad = [];
   List<Map<String, dynamic>> clientesPorSexo = [];
@@ -45,7 +45,7 @@ class _EstadisticasPantallaState extends State<EstadisticasPantalla> {
       if (!mounted) return;
 
       setState(() {
-        cantidadVentasMes = (cantidad as num?)?.toInt() ?? 0;
+        cantidadVentasHoy = (cantidad as num?)?.toInt() ?? 0;
 
         if (clienteTop is List && clienteTop.isNotEmpty) {
           clienteTopGasto = {
@@ -113,32 +113,26 @@ class _EstadisticasPantallaState extends State<EstadisticasPantalla> {
   Widget build(BuildContext context) {
     if (cargando) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Estadísticas")),
+        appBar: AppBar(title: const Text("Panel de Control")),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Estadísticas de Ventas"), elevation: 0),
+      appBar: AppBar(title: const Text("Panel de Control"), elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
             // 🔹 Los compact cards
             GridView.count(
-              crossAxisCount: 4,
+              crossAxisCount: 3,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 1.2,
+              childAspectRatio: 2,
               children: [
-                _compactDashboardCard(
-                  color: const Color(0xFF19D3C5),
-                  title: "TOTAL VENTAS ESTE MES",
-                  value: "€${totalVentasMes.toStringAsFixed(2)}",
-                  subtitle: "+8.5% vs last month",
-                ),
                 _compactDashboardCard(
                   color: const Color(0xFF2B4C7E),
                   title: "PRODUCTO MÁS VENDIDO",
@@ -161,7 +155,34 @@ class _EstadisticasPantallaState extends State<EstadisticasPantalla> {
               ],
             ),
             const SizedBox(height: 20),
-
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 2,
+              children: [
+                _compactDashboardCard(
+                  color: const Color(0xFF19D3C5),
+                  title: "TOTAL VENTAS ANUAL",
+                  value: "€${totalVentasAnual.toStringAsFixed(2)}",
+                ),
+                _compactDashboardCard(
+                  color: const Color.fromARGB(255, 55, 211, 89),
+                  title: "TOTAL VENTAS ESTE MES",
+                  value: "€${totalVentasMes.toStringAsFixed(2)}",
+                  subtitle: "+8.5% vs last month",
+                ),
+                _compactDashboardCard(
+                  color: const Color.fromARGB(255, 211, 25, 211),
+                  title: "VENTAS REALIZADAS HOY",
+                  value: "${cantidadVentasHoy.toStringAsFixed(0)}",
+                  subtitle: "YUPPIII",
+                ),
+              ],
+            ),
+              const SizedBox(height: 20),
             // 🔹 NUEVA FILA con las dos primeras gráficas lado a lado
             Row(
               children: [
