@@ -5,17 +5,13 @@ class MetodosVentas {
 
   Future<void> insertarVentas({
     required int id_cliente,
-    required int id_producto,
-    required int cantidad,
     required DateTime fecha,
     required double total,
   }) async {
     await supabase.from('ventas').insert({
       'id_cliente': id_cliente,
-      'id_producto': id_producto,
-      'cantidad': cantidad,
       'fecha': fecha.toIso8601String(),
-      'total': total,
+      'Total': total,
     });
   }
 
@@ -26,14 +22,12 @@ class MetodosVentas {
   Future<void> actualizarVentas(
     int id, {
     required int id_cliente,
-    required int id_producto,
-    required int cantidad,
     required DateTime fecha,
     required double total,
   }) async {
     await supabase
         .from('ventas')
-        .update({'id_cliente': id_cliente, 'id_producto': id_producto, 'cantidad': cantidad, 'fecha': fecha.toIso8601String(), 'total': total})
+        .update({'id_cliente': id_cliente, 'fecha': fecha.toIso8601String(), 'Total': total})
         .eq('id', id);
   }
 

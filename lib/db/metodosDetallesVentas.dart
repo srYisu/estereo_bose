@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MetodosDetallesVentas {
@@ -47,4 +48,11 @@ class MetodosDetallesVentas {
     final response = await supabase.from('detallesVentas').select().eq('id_venta', idVenta);
     return response as List<Map<String, dynamic>>;
   }
+}
+
+class ProductosAgregados {
+  final int id;
+  final int cantidad;
+
+  ProductosAgregados({required this.id, required this.cantidad});
 }

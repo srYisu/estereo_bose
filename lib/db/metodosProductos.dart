@@ -7,11 +7,13 @@ class MetodosProductos {
     required String nombre,
     required String categoria,
     required double precio,
+    required int cantidad,
   }) async {
     await supabase.from('productos').insert({
       'nombre': nombre,
       'categoria': categoria,
       'precio': precio,
+      'cantidad': cantidad,
     });
   }
 
@@ -24,10 +26,11 @@ class MetodosProductos {
     required String nombre,
     required String categoria,
     required double precio,
+    required int cantidad,
   }) async {
     await supabase
         .from('productos')
-        .update({'nombre': nombre, 'categoria': categoria, 'precio': precio})
+        .update({'nombre': nombre, 'categoria': categoria, 'precio': precio, 'cantidad': cantidad})
         .eq('id', id);
   }
 

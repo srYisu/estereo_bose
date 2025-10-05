@@ -18,9 +18,19 @@ class _VentasPageState extends State<VentasPage> {
   final MetodosProductos productosService = MetodosProductos();
   final MetodosDetallesVentas detallesVentaService = MetodosDetallesVentas();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _cantidadController = TextEditingController();
   String _searchTerm = '';
   int? _selectedIdCliente; // store selected cliente across dialog
   int? _selectedIdProducto; // store selected producto across dialog
+  // ahora guarda mapas con {'id': <int>, 'cantidad': <int>}
+  List<Map<String, int>> _productosAgregados = [];
+  //List<ProductosAgregados> _productosAgregados = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _productosAgregados = [];
+  }
 
   Widget listaClientes() {
     return StreamBuilder<List<Map<String, dynamic>>>(
@@ -83,18 +93,79 @@ class _VentasPageState extends State<VentasPage> {
           );
         }).toList();
 
-        return DropdownButtonFormField<int>(
-          value: _selectedIdProducto,
-          decoration: const InputDecoration(
-            labelText: 'Seleccionar Producto',
-          ),
-          items: items,
-          onChanged: (value) {
-            setState(() {
-              _selectedIdProducto = value;
-            });
-          },
-          validator: (v) => v == null ? 'Seleccione un producto' : null,
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _selectedIdProducto,
+                    decoration: const InputDecoration(
+                      labelText: 'Seleccionar Producto',
+                    ),
+                    items: items,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedIdProducto = value;
+                      });
+                    },
+                    validator: (v) => v == null ? 'Seleccione un producto' : null,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () async {
+                    if (_selectedIdProducto == null) return;
+                    final qty = int.tryParse(_cantidadController.text) ?? 1;
+
+                    // obtener el producto para comprobar stock (campo 'cantidad' en la tabla productos)
+                    final producto = await productosService.obtenerProductoPorId(_selectedIdProducto!);
+                    final stock = (producto?['cantidad'] as int?) ?? 0;
+
+                    // si qty >= stock no permitir la compra (según requisito)
+                    final idx = _productosAgregados.indexWhere((e) => e['id'] == _selectedIdProducto);
+                    final currentQty = idx >= 0 ? (_productosAgregados[idx]['cantidad'] ?? 0) : 0;
+                    if (qty + currentQty > stock) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text('Stock insuficiente'),
+                          content: Text('No se puede agregar $qty unidades. Stock disponible: $stock.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Aceptar'),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+                    setState(() {
+                      if (idx >= 0) {
+                        // incrementar cantidad existente por qty
+                        _productosAgregados[idx]['cantidad'] = (_productosAgregados[idx]['cantidad'] ?? 0) + qty;
+                      } else {
+                        // añadir nuevo con cantidad = qty
+                        _productosAgregados.add({'id': _selectedIdProducto!, 'cantidad': qty});
+                      }
+                      _cantidadController.clear();
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _cantidadController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Cantidad',
+                hintText: 'Ingresa cantidad antes de añadir',
+              ),
+            )
+          ],
         );
       },
     );
@@ -176,20 +247,19 @@ class _VentasPageState extends State<VentasPage> {
               const SizedBox(height: 8),
 
               listaClientes(),
-              const SizedBox(height: 16),
-              const Text('Seleccionar Producto:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              listaProductos(),
-              const SizedBox(height: 16),
+              /*const SizedBox(height: 16),
               TextField(
                 controller: cantidadController,
                 decoration: const InputDecoration(labelText: "Cantidad"),
                 keyboardType: TextInputType.number,
-              ),
+              ),*/
               TextField(
                 readOnly: true,
                 decoration: InputDecoration(
-                  labelText: "Fecha",
+                  labelText: selectedFecha != null
+                      ? selectedFecha!.toIso8601String().substring(0, 10)
+                      : 'Fecha',
                   hintText: selectedFecha != null
                       ? selectedFecha!.toIso8601String().substring(0, 10)
                       : 'Seleccionar fecha',
@@ -208,45 +278,196 @@ class _VentasPageState extends State<VentasPage> {
                   }
                 },
               ),
+              const SizedBox(height: 16),
+              // mostrar suma de cantidades
+              Text(
+                'Productos Agregados: x${_productosAgregados.fold<int>(0, (prev, e) => prev + (e['cantidad'] ?? 0))}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => _verAgregarProductos(), 
+                child: const Text('Agregar Productos')
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              _selectedIdCliente = null;
+              _selectedIdProducto = null;
+              _productosAgregados = [];
+              Navigator.pop(context);
+            },
             child: const Text("Cancelar"),
           ),
           ElevatedButton(
             onPressed: () async {
+              // Calcular total y preparar inserciones de detalles
+              double total = 0;
+              for (var entry in _productosAgregados) {
+                final int? pid = entry['id'];
+                final int qty = entry['cantidad'] ?? 0;
+                if (pid == null || qty <= 0) continue;
+                final producto = await productosService.obtenerProductoPorId(pid);
+                double precio = 0.0;
+                if (producto != null) {
+                  final p = producto['precio'];
+                  if (p is num) {
+                    precio = p.toDouble();
+                  } else {
+                    precio = double.tryParse(p?.toString() ?? '') ?? 0.0;
+                  }
+                }
+                total += precio * qty;
+              }
+
               if (venta == null) {
+                // Insertar la venta
                 await ventasService.insertarVentas(
                   id_cliente: _selectedIdCliente ?? selectedIdCliente ?? 0,
-                  id_producto: _selectedIdProducto ?? selectedIdProducto ?? 0,
-                  cantidad: int.tryParse(cantidadController.text) ?? 0,
+                  total: total,
                   fecha: selectedFecha ?? DateTime.now(),
-                  total: 0.0,
                 );
+
+                // Obtener el id de la venta recién creada: tomar el id más alto en la tabla 'ventas'
+                int idVenta = 0;
+                try {
+                  final resp = await Supabase.instance.client
+                      .from('ventas')
+                      .select('id')
+                      .order('id', ascending: false)
+                      .limit(1)
+                      .maybeSingle();
+                  if (resp != null && resp['id'] != null) {
+                    idVenta = (resp['id'] as num?)?.toInt() ?? 0;
+                  }
+                } catch (_) {
+                  idVenta = 0;
+                }
+
+                // Insertar detalles para cada producto usando idVenta
+                for (var entry in _productosAgregados) {
+                  final int? pid = entry['id'];
+                  final int qty = entry['cantidad'] ?? 0;
+                  if (pid == null || qty <= 0) continue;
+                  final producto = await productosService.obtenerProductoPorId(pid);
+                  double precioUnitario = 0.0;
+                  if (producto != null) {
+                    final p = producto['precio'];
+                    if (p is num) {
+                      precioUnitario = p.toDouble();
+                    } else {
+                      precioUnitario = double.tryParse(p?.toString() ?? '') ?? 0.0;
+                    }
+                  }
+                  await detallesVentaService.insertarDetallesVentas(
+                    id_producto: pid,
+                    id_venta: idVenta,
+                    cantidad: qty,
+                    precio_unitario: precioUnitario,
+                  );
+                }
               } else {
                 await ventasService.actualizarVentas(
                   venta['id'],
                   id_cliente: _selectedIdCliente ?? selectedIdCliente ?? 0,
-                  id_producto: _selectedIdProducto ?? selectedIdProducto ?? 0,
-                  cantidad: int.tryParse(cantidadController.text) ?? 0,
                   fecha: selectedFecha ?? DateTime.now(),
-                  total: 0.0,
+                  total: total,
                 );
               }
-              // keep the selected id in state for next time
-              setState(() {
-                _selectedIdCliente = _selectedIdCliente ?? selectedIdCliente;
-                _selectedIdProducto = _selectedIdProducto ?? selectedIdProducto;
-              });
-              Navigator.pop(context);
-            },
-            child: const Text("Guardar"),
-          ),
+               setState(() {
+                 _selectedIdCliente = _selectedIdCliente ?? selectedIdCliente;
+                 _selectedIdProducto = _selectedIdProducto ?? selectedIdProducto;
+               });
+               Navigator.pop(context);
+             },
+             child: const Text("Guardar"),
+           ),
         ],
       ),
+    );
+  }
+
+  void _verAgregarProductos() async
+  {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Agregar Productos'),
+              content: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    listaProductos(),
+                    const SizedBox(height: 16),
+                      if(_productosAgregados.isEmpty == false)...[
+                       
+                      SizedBox(
+                        height: 200,
+                        width: 300,
+                        child: ListView.builder(
+                          itemCount: _productosAgregados.length,
+                          itemBuilder: (context, index) {
+                             final entry = _productosAgregados[index];
+                             final int? id = entry['id'];
+                             final cantidad = entry['cantidad'] ?? 0;
+                             return FutureBuilder<Map<String, dynamic>?>(
+                               future: productosService.obtenerProductoPorId(id!),
+                               builder: (context, snapshot) {
+                                 if (snapshot.connectionState == ConnectionState.waiting) {
+                                   return const ListTile(title: Text('Cargando...'));
+                                 }
+                                 final producto = snapshot.data;
+                                 final nombre = producto?['nombre'] ?? 'Desconocido';
+                                 return ListTile(
+                                   title: Text('$nombre'),
+                                   subtitle: Text('Cantidad: $cantidad'),
+                                   trailing: Row(
+                                     mainAxisSize: MainAxisSize.min,
+                                     children: [
+                                       IconButton(
+                                         icon: const Icon(Icons.remove),
+                                         onPressed: () {
+                                           setState(() {
+                                             if (cantidad > 1) {
+                                              //_productosAgregados[index]['cantidad'] = cantidad - 1;
+                                              _productosAgregados[index]['cantidad'] = 0; // Muy lageado como para restar uno
+                                               _productosAgregados.removeAt(index);
+                                             } else {
+                                               _productosAgregados.removeAt(index);
+                                             }
+                                           });
+                                         },
+                                       ),
+                                     ],
+                                   ),
+                                 );
+                               },
+                             );
+                          },
+                        ),
+                      ),
+                     ]
+                     else... [
+                       const Text('No hay productos agregados'),
+                     ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -286,7 +507,7 @@ class _VentasPageState extends State<VentasPage> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search),
-                    hintText: "Buscar por ID Cliente o ID Producto...",
+                    hintText: "Buscar por ID Cliente o por Fecha...",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -332,8 +553,10 @@ class _VentasPageState extends State<VentasPage> {
                 final ventas = snapshot.data!;
                 final filteredVentas = ventas.where((venta) {
                   final idCliente = venta['id_cliente']?.toString() ?? '';
-                  final idProducto = venta['id_producto']?.toString() ?? '';
-                  return idCliente.contains(_searchTerm) || idProducto.contains(_searchTerm);
+                  final fecha = (venta['fecha'] as String).length >= 10
+                      ? (venta['fecha'] as String).substring(0, 10)
+                      : (venta['fecha'] as String);
+                  return idCliente.contains(_searchTerm) || fecha.contains(_searchTerm);
                 }).toList();
 
                 final salesByProduct = _calculateSalesByProduct(ventas);

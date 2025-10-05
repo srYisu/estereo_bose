@@ -24,7 +24,9 @@ class _ProductosPageState extends State<ProductosPage> {
     final precioController = TextEditingController(
       text: producto?['precio']?.toString() ?? '',
     );
-
+    final cantidadController = TextEditingController(
+      text: producto?['cantidad']?.toString() ?? '',
+    );
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -45,6 +47,11 @@ class _ProductosPageState extends State<ProductosPage> {
                 decoration: const InputDecoration(labelText: "Precio"),
                 keyboardType: TextInputType.numberWithOptions(decimal: true),
               ),
+              TextField(
+                controller: cantidadController,
+                decoration: const InputDecoration(labelText: "Cantidad"),
+                keyboardType: TextInputType.numberWithOptions(signed: false),
+              ),
             ],
           ),
         ),
@@ -60,6 +67,7 @@ class _ProductosPageState extends State<ProductosPage> {
                   nombre: nombreController.text,
                   categoria: categoriaController.text,
                   precio: double.tryParse(precioController.text) ?? 0.0,
+                  cantidad: int.tryParse(cantidadController.text) ?? 0,
                 );
               } else {
                 await productosService.actualizarProducto(
@@ -67,6 +75,8 @@ class _ProductosPageState extends State<ProductosPage> {
                   nombre: nombreController.text,
                   categoria: categoriaController.text,
                   precio: double.tryParse(precioController.text) ?? 0.0,
+                  cantidad: int.tryParse(cantidadController.text) ?? 0,
+                  
                 );
               }
               Navigator.pop(context);
@@ -180,6 +190,7 @@ class _ProductosPageState extends State<ProductosPage> {
                       DataColumn(label: Text('Nombre')),
                       DataColumn(label: Text('Categoria')),
                       DataColumn(label: Text('Precio')),
+                      DataColumn(label: Text('Cantidad')),
                       DataColumn(label: Text('Acciones')),
                     ],
                     rows: filteredProductos.map((producto) {
@@ -189,6 +200,7 @@ class _ProductosPageState extends State<ProductosPage> {
                           DataCell(Text(producto['nombre'] ?? '')),
                           DataCell(Text(producto['categoria'] ?? '')),
                           DataCell(Text(producto['precio'].toString())),
+                          DataCell(Text(producto['cantidad'].toString())),
                           DataCell(
                             Row(
                               children: [
