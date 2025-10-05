@@ -22,8 +22,9 @@ class _VentasPageState extends State<VentasPage> {
   String _searchTerm = '';
   int? _selectedIdCliente; // store selected cliente across dialog
   int? _selectedIdProducto; // store selected producto across dialog
-  // ahora guarda mapas con {'id': <int>, 'cantidad': <int>}
-  List<Map<String, int>> _productosAgregados = [];
+  int? _selectedIdDetallesVenta; // store selected producto across dialog
+  // ahora guarda mapas con {'id': <int>, 'cantidad': <int>, 'id_detalle': <int?>}
+  List<Map<String, int?>> _productosAgregados = [];
   //List<ProductosAgregados> _productosAgregados = [];
 
   @override
@@ -360,18 +361,27 @@ class _VentasPageState extends State<VentasPage> {
                   total: total,
                 );
                 
+                // actualizar o insertar detalles según si ya existe id_detalle
                 for (var entry in _productosAgregados) {
                   final int? pid = entry['id'];
                   final int qty = entry['cantidad'] ?? 0;
                   if (pid == null || qty <= 0) continue;
-
-                  await detallesVentaService.actualizarDetallesVentas(
-                    venta['id_detalle'],                    
-                    id_producto: pid,
-                    id_venta: venta['id'],
-                    cantidad: qty,          
-                  );
-                }                  
+                  final int? detId = entry['id_detalle'];
+                  if (detId != null) {
+                    await detallesVentaService.actualizarDetallesVentas(
+                      detId,
+                      id_producto: pid,
+                      id_venta: venta['id'],
+                      cantidad: qty,
+                    );
+                  } else {
+                    await detallesVentaService.insertarDetallesVentas(
+                      id_producto: pid,
+                      id_venta: venta['id'],
+                      cantidad: qty,
+                    );
+                  }
+                }
               }
               setState(() {
                  _selectedIdCliente = _selectedIdCliente ?? selectedIdCliente;
@@ -468,7 +478,7 @@ class _VentasPageState extends State<VentasPage> {
   }
 
   Future<void> _eliminarVenta(int id) async {
-    await ventasService.elimiarVentas(id);
+    await ventasService.eliminarVentas(id);
   }
 
   Map<int, int> _calculateSalesByProduct(List<Map<String, dynamic>> ventas) {
@@ -582,7 +592,9 @@ class _VentasPageState extends State<VentasPage> {
                                   DataCell(
                                     Row(
                                       children: [
-                                        IconButton(
+                                        // Editar ventas desactivado por ahora :b
+                                        
+                                        /*IconButton(
                                           icon: const Icon(
                                             Icons.edit,
                                             color: Colors.orange,
@@ -591,14 +603,16 @@ class _VentasPageState extends State<VentasPage> {
                                             // Cargar cliente, fecha y detalles (productos + cantidades)
                                             try {
                                               final detalles = await detallesVentaService.obtenerDetallesVentasPorVentaId(venta['id']);
-                                              // Mapear a la estructura interna {'id': <int>, 'cantidad': <int>}
-                                              final List<Map<String,int>> detallesMap = [];
+                                              // Mapear a la estructura interna {'id': <int>, 'cantidad': <int>, 'id_detalle': <int?>}
+                                              final List<Map<String,int?>> detallesMap = [];
                                               if (detalles != null) {
                                                 for (var d in detalles) {
                                                   final pid = d['id_producto'] as int?;
                                                   final qty = (d['cantidad'] as int?) ?? 0;
+                                                  // intentar leer id del detalle (puede ser 'id' o 'id_detalle' según esquema)
+                                                  final detId = (d['id'] as int?) ?? (d['id_detalle'] as int?);
                                                   if (pid != null) {
-                                                    detallesMap.add({'id': pid, 'cantidad': qty});
+                                                    detallesMap.add({'id': pid, 'cantidad': qty, 'id_detalle': detId});
                                                   }
                                                 }
                                               }
@@ -613,7 +627,7 @@ class _VentasPageState extends State<VentasPage> {
                                             }
                                             await _mostrarFormulario(venta: venta);
                                           },
-                                        ),
+                                        ),*/
                                         IconButton(
                                           icon: const Icon(
                                             Icons.delete,

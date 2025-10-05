@@ -15,7 +15,7 @@ class MetodosVentas {
     });
   }
 
-  Future<void> elimiarVentas(int id) async {
+  Future<void> eliminarVentas(int id) async {
     await supabase.from('ventas').delete().eq('id', id);
   }
 
