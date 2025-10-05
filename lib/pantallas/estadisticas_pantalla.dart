@@ -113,7 +113,7 @@ class _EstadisticasPantallaState extends State<EstadisticasPantalla> {
   Widget build(BuildContext context) {
     if (cargando) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Estadísticas")),
+        appBar: AppBar(title: const Text("Estadísticas de Ventas")),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
