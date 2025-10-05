@@ -17,6 +17,7 @@ class Metodosclientes {
     });
   }
 
+  /*
   Future<void> eliminarCliente(int id) async {
     await supabase.from('clientes').delete().eq('id', id);
   }
@@ -24,6 +25,21 @@ class Metodosclientes {
   Future<void> eliminarClientes_TrueFalse(int id) async{
     await supabase.from('clientes').update({'activo': false}).eq('id', id);
   }
+  */
+  Future<void> eliminarClienteConVerificacion(int id) async {
+  final ventas = await supabase
+      .from('ventas')
+      .select('id')
+      .eq('id_cliente', id);
+  if (ventas.isEmpty) {
+    await supabase.from('clientes').delete().eq('id', id);
+  } 
+  else {
+    await supabase.from('clientes').update({'activo': false}).eq('id', id);
+  }
+}
+
+
 
   Future<void> actualizarCliente(
     int id, {
@@ -44,9 +60,7 @@ class Metodosclientes {
     return supabase
         .from('clientes')
         .stream(primaryKey: ['id'])
-        .eq('activo', true)
         .order('id')
-        .execute()
         .map((rows) => rows.map((r) => r as Map<String, dynamic>).toList());
   }
 }

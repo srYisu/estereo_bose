@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:estereo_bose/db/metodosClientes.dart';
 
 class ClientesPage extends StatefulWidget {
@@ -86,7 +85,7 @@ class _ClientesPageState extends State<ClientesPage> {
   }
 
   Future<void> _eliminarCliente(int id) async {
-    await clientesService.eliminarClientes_TrueFalse(id);
+    await clientesService.eliminarClienteConVerificacion(id);
   }
 
   Map<String, int> _calculateClientsByCity(List<Map<String, dynamic>> clients) {
@@ -115,7 +114,10 @@ class _ClientesPageState extends State<ClientesPage> {
               return const Center(child: Text("No hay clientes"));
             }
 
-            final clientes = snapshot.data!;
+            final clientes = snapshot.data!
+              .where((c) => c['activo'] == true)
+              .toList();
+              
             final filteredClientes = clientes.where((cliente) {
               final nombre = cliente['nombre']?.toLowerCase() ?? '';
               return nombre.contains(_searchTerm.toLowerCase());
@@ -227,8 +229,37 @@ class _ClientesPageState extends State<ClientesPage> {
                                             Icons.delete,
                                             color: Colors.red,
                                           ),
-                                          onPressed: () =>
-                                              _eliminarCliente(cliente['id']),
+                                          onPressed: () async {
+                                            final confirm = await showDialog<bool>(
+                                              context: context,
+                                              builder: (_) => AlertDialog(
+                                                title: const Text(
+                                                  "Confirmar Eliminación",
+                                                ),
+                                                content: const Text(
+                                                  "¿Estás seguro de que deseas eliminar este cliente?",
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(context, false),
+                                                    child: const Text("Cancelar"),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(context, true),
+                                                    child: const Text("Eliminar"),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.red,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                            if (confirm == true) {
+                                              await _eliminarCliente(cliente['id']);
+                                            }
+                                          }      
                                         ),
                                       ],
                                     ),
