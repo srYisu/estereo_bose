@@ -34,6 +34,16 @@ class MetodosProductos {
         .eq('id', id);
   }
 
+  Future<void> cambiarStock(
+    int id, {
+    required int cantidad,
+  }) async {
+    await supabase
+        .from('productos')
+        .update({'cantidad': cantidad})
+        .eq('id', id);
+  }
+
   Stream<List<Map<String, dynamic>>> streamProductos() {
     return supabase
         .from('productos')

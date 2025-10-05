@@ -367,6 +367,11 @@ class _VentasPageState extends State<VentasPage> {
                     id_venta: nextVentaId,
                     cantidad: qty,                    
                   );
+
+                  await productosService.cambiarStock(
+                    pid,
+                    cantidad: ((await productosService.obtenerProductoPorId(pid))?['cantidad'] ?? 0) - qty,
+                  );
                 }
               } else {
                 await ventasService.actualizarVentas(
