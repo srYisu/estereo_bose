@@ -119,12 +119,7 @@ class _EstadisticasPantallaState extends State<EstadisticasPantalla> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1A2236),
-      appBar: AppBar(
-        title: const Text("Estadísticas de Ventas"),
-        backgroundColor: const Color(0xFF1A2236),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text("Estadísticas de Ventas"), elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(

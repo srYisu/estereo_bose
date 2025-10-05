@@ -15,31 +15,18 @@ class NavigationMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 250,
-      color: const Color.fromARGB(
-        255,
-        20,
-        39,
-        75,
-      ), // Changed from white to black
+      color: const Color.fromARGB(255, 20, 39, 75),
       child: Column(
         children: [
           Container(
             height: 80,
-            color: const Color.fromARGB(
-              255,
-              20,
-              39,
-              75,
-            ), // Changed from teal to black to match the image
+            color: const Color.fromARGB(255, 20, 39, 75),
             child: const Row(
               children: [
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Icon(Icons.dashboard, color: Colors.white, size: 36),
-                ),
+                Padding(padding: EdgeInsets.all(16)),
                 Text(
                   'Menú',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
+                  style: TextStyle(color: Colors.white, fontSize: 28),
                 ),
               ],
             ),
@@ -47,52 +34,62 @@ class NavigationMenu extends StatelessWidget {
           Expanded(
             child: ListView(
               children: [
-                ListTile(
-                  leading: const Icon(Icons.dashboard, color: Colors.white),
-                  title: const Text(
-                    'Dashboard',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                _buildMenuTile(
+                  icon: Icons.dashboard,
+                  label: 'Dashboard',
                   selected: selectedItem == 'Dashboard',
                   onTap: () => onItemSelected('Dashboard'),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.home, color: Colors.white),
-                  title: const Text(
-                    'Clientes',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                _buildMenuTile(
+                  icon: Icons.home,
+                  label: 'Clientes',
                   selected: selectedItem == 'Clientes',
                   onTap: () => onItemSelected('Clientes'),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.shopping_bag, color: Colors.white),
-                  title: const Text(
-                    'Productos',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                _buildMenuTile(
+                  icon: Icons.shopping_bag,
+                  label: 'Productos',
+                  selected: selectedItem == 'Productos',
                   onTap: () => onItemSelected('Productos'),
                 ),
-                ListTile(
-                  leading: const Icon(Icons.point_of_sale, color: Colors.white),
-                  title: const Text(
-                    'Ventas',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                _buildMenuTile(
+                  icon: Icons.point_of_sale,
+                  label: 'Ventas',
+                  selected: selectedItem == 'Ventas',
                   onTap: () => onItemSelected('Ventas'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.bar_chart, color: Colors.white),
-                  title: const Text(
-                    'Estadísticas',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onTap: () => onItemSelected('Estadísticas'),
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMenuTile({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: selected ? Colors.white.withOpacity(0.08) : Colors.transparent,
+        border: const Border(
+          bottom: BorderSide(color: Color(0xFF2C3E5A), width: 1),
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        leading: Icon(icon, color: Colors.white, size: 35),
+        title: Text(
+          label,
+          style: const TextStyle(color: Colors.white, fontSize: 20),
+        ),
+        selected: selected,
+        onTap: onTap,
+        horizontalTitleGap: 16,
+        minLeadingWidth: 0,
       ),
     );
   }
