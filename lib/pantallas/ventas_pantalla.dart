@@ -228,7 +228,23 @@ class _VentasPageState extends State<VentasPage> {
     );
   }
 
-  void _mostrarFormulario({Map<String, dynamic>? venta}) {
+  Future<void> _mostrarFormulario({Map<String, dynamic>? venta}) async {
+    int nextVentaId = 1;
+    try {
+      final resp = await Supabase.instance.client
+          .from('ventas')
+          .select('id')
+          .order('id', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (resp != null && resp['id'] != null) {
+        final lastId = (resp['id'] as num?)?.toInt() ?? 0;
+        nextVentaId = lastId + 1;
+      }
+    } catch (_) {
+      nextVentaId = 1;
+    }
+
     int? selectedIdCliente = venta?['id_cliente'] ?? _selectedIdCliente;
     int? selectedIdProducto = venta?['id_producto'] ?? _selectedIdProducto;
     final cantidadController = TextEditingController(
@@ -248,12 +264,6 @@ class _VentasPageState extends State<VentasPage> {
 
               listaClientes(),
               const SizedBox(height: 8),
-              /*const SizedBox(height: 16),
-              TextField(
-                controller: cantidadController,
-                decoration: const InputDecoration(labelText: "Cantidad"),
-                keyboardType: TextInputType.number,
-              ),*/
               TextField(
                 readOnly: true,
                 decoration: InputDecoration(
@@ -331,42 +341,15 @@ class _VentasPageState extends State<VentasPage> {
                   fecha: selectedFecha ?? DateTime.now(),
                 );
 
-                // Obtener el id de la venta recién creada: tomar el id más alto en la tabla 'ventas'
-                int idVenta = 0;
-                try {
-                  final resp = await Supabase.instance.client
-                      .from('ventas')
-                      .select('id')
-                      .order('id', ascending: false)
-                      .limit(1)
-                      .maybeSingle();
-                  if (resp != null && resp['id'] != null) {
-                    idVenta = (resp['id'] as num?)?.toInt() ?? 0;
-                  }
-                } catch (_) {
-                  idVenta = 0;
-                }
-
-                // Insertar detalles para cada producto usando idVenta
                 for (var entry in _productosAgregados) {
                   final int? pid = entry['id'];
                   final int qty = entry['cantidad'] ?? 0;
                   if (pid == null || qty <= 0) continue;
-                  final producto = await productosService.obtenerProductoPorId(pid);
-                  double precioUnitario = 0.0;
-                  if (producto != null) {
-                    final p = producto['precio'];
-                    if (p is num) {
-                      precioUnitario = p.toDouble();
-                    } else {
-                      precioUnitario = double.tryParse(p?.toString() ?? '') ?? 0.0;
-                    }
-                  }
+
                   await detallesVentaService.insertarDetallesVentas(
                     id_producto: pid,
-                    id_venta: idVenta,
-                    cantidad: qty,
-                    precio_unitario: precioUnitario,
+                    id_venta: nextVentaId,
+                    cantidad: qty,                    
                   );
                 }
               } else {
@@ -376,8 +359,21 @@ class _VentasPageState extends State<VentasPage> {
                   fecha: selectedFecha ?? DateTime.now(),
                   total: total,
                 );
+                
+                for (var entry in _productosAgregados) {
+                  final int? pid = entry['id'];
+                  final int qty = entry['cantidad'] ?? 0;
+                  if (pid == null || qty <= 0) continue;
+
+                  await detallesVentaService.actualizarDetallesVentas(
+                    venta['id_detalle'],                    
+                    id_producto: pid,
+                    id_venta: venta['id'],
+                    cantidad: qty,          
+                  );
+                }                  
               }
-               setState(() {
+              setState(() {
                  _selectedIdCliente = _selectedIdCliente ?? selectedIdCliente;
                  _selectedIdProducto = _selectedIdProducto ?? selectedIdProducto;
                });
@@ -387,7 +383,7 @@ class _VentasPageState extends State<VentasPage> {
            ),
         ],
       ),
-    );
+      );
   }
 
   void _verAgregarProductos() async
@@ -486,200 +482,223 @@ class _VentasPageState extends State<VentasPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Gestión de Ventas",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search),
-                    hintText: "Buscar por ID Cliente o por Fecha...",
-                    border: OutlineInputBorder(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Gestion de Ventas'),
+      ),
+      body:
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search),
+                      hintText: "Buscar por ID Cliente o por Fecha...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchTerm = value;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _mostrarFormulario(),
+                  icon: const Icon(Icons.add),
+                  label: const Text("Nueva Venta"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onChanged: (value) {
-                    setState(() {
-                      _searchTerm = value;
-                    });
-                  },
                 ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: () => _mostrarFormulario(),
-                icon: const Icon(Icons.add),
-                label: const Text("Nueva Venta"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 16,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: ventasService.streamVentas(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No hay ventas"));
-                }
-
-                final ventas = snapshot.data!;
-                final filteredVentas = ventas.where((venta) {
-                  final idCliente = venta['id_cliente']?.toString() ?? '';
-                  final fecha = (venta['fecha'] as String).length >= 10
-                      ? (venta['fecha'] as String).substring(0, 10)
-                      : (venta['fecha'] as String);
-                  return idCliente.contains(_searchTerm) || fecha.contains(_searchTerm);
-                }).toList();
-
-                final salesByProduct = _calculateSalesByProduct(ventas);
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columns: const [
-                            DataColumn(label: Text('ID')),
-                            DataColumn(label: Text('ID Cliente')),
-                            DataColumn(label: Text('Monto Total')),
-                            DataColumn(label: Text('Fecha')),
-                            DataColumn(label: Text('Acciones')),
-                          ],
-                          rows: filteredVentas.map((venta) {
-                            return DataRow(
-                              cells: [
-                                DataCell(Text(venta['id'].toString())),
-                                DataCell(Text(venta['id_cliente'].toString())),
-                                DataCell(Text("€ ${venta['Total'].toString()}")),
-                                DataCell(Text(
-                                  (venta['fecha'] as String).length >= 10
-                                      ? (venta['fecha'] as String).substring(0, 10)
-                                      : (venta['fecha'] as String),
-                                )),
-                                DataCell(
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.edit,
-                                          color: Colors.orange,
-                                        ),
-                                        onPressed: () => _mostrarFormulario(venta: venta),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () => _eliminarVenta(venta['id']),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () => _verProductosComprados(venta['id']), 
-                                        child: const Text('Ver Productos'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: Container(
-                        width: 300,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              "Cantidad Vendida por Producto",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 100,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                children: salesByProduct.entries.map((entry) {
-                                  final idProducto = entry.key;
-                                  final cantidad = entry.value;
-                                  final barHeight = cantidad * 5.0; // Adjust scale
-                                  return Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Container(
-                                        width: 20,
-                                        height: barHeight,
-                                        color: Colors.blue,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text('Prod $idProducto'),
-                                      Text(cantidad.toString()),
-                                    ],
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Expanded(
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+                stream: ventasService.streamVentas(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text("No hay ventas"));
+                  }
+
+                  final ventas = snapshot.data!;
+                  final filteredVentas = ventas.where((venta) {
+                    final idCliente = venta['id_cliente']?.toString() ?? '';
+                    final fecha = (venta['fecha'] as String).length >= 10
+                        ? (venta['fecha'] as String).substring(0, 10)
+                        : (venta['fecha'] as String);
+                    return idCliente.contains(_searchTerm) || fecha.contains(_searchTerm);
+                  }).toList();
+
+                  final salesByProduct = _calculateSalesByProduct(ventas);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: DataTable(
+                            columns: const [
+                              DataColumn(label: Text('ID')),
+                              DataColumn(label: Text('ID Cliente')),
+                              DataColumn(label: Text('Monto Total')),
+                              DataColumn(label: Text('Fecha')),
+                              DataColumn(label: Text('Acciones')),
+                            ],
+                            rows: filteredVentas.map((venta) {
+                              return DataRow(
+                                cells: [
+                                  DataCell(Text(venta['id'].toString())),
+                                  DataCell(Text(venta['id_cliente'].toString())),
+                                  DataCell(Text("€ ${venta['Total'].toString()}")),
+                                  DataCell(Text(
+                                    (venta['fecha'] as String).length >= 10
+                                        ? (venta['fecha'] as String).substring(0, 10)
+                                        : (venta['fecha'] as String),
+                                  )),
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit,
+                                            color: Colors.orange,
+                                          ),
+                                          onPressed: () async {
+                                            // Cargar cliente, fecha y detalles (productos + cantidades)
+                                            try {
+                                              final detalles = await detallesVentaService.obtenerDetallesVentasPorVentaId(venta['id']);
+                                              // Mapear a la estructura interna {'id': <int>, 'cantidad': <int>}
+                                              final List<Map<String,int>> detallesMap = [];
+                                              if (detalles != null) {
+                                                for (var d in detalles) {
+                                                  final pid = d['id_producto'] as int?;
+                                                  final qty = (d['cantidad'] as int?) ?? 0;
+                                                  if (pid != null) {
+                                                    detallesMap.add({'id': pid, 'cantidad': qty});
+                                                  }
+                                                }
+                                              }
+                                              setState(() {
+                                                _productosAgregados = detallesMap;
+                                                _selectedIdCliente = (venta['id_cliente'] as int?) ?? _selectedIdCliente;
+                                             
+                                                _selectedIdProducto = detallesMap.isNotEmpty ? detallesMap.first['id'] : _selectedIdProducto;
+                                              });
+                                            } catch (e) {
+                                              // evitar error
+                                            }
+                                            await _mostrarFormulario(venta: venta);
+                                          },
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () => _eliminarVenta(venta['id']),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () => _verProductosComprados(venta['id']), 
+                                          child: const Text('Ver Productos'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Container(
+                          width: 300,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 8,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                "Cantidad Vendida por Producto",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                height: 100,
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: salesByProduct.entries.map((entry) {
+                                    final idProducto = entry.key;
+                                    final cantidad = entry.value;
+                                    final barHeight = cantidad * 5.0; // Adjust scale
+                                    return Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Container(
+                                          width: 20,
+                                          height: barHeight,
+                                          color: Colors.blue,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text('Prod $idProducto'),
+                                        Text(cantidad.toString()),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
-    );
+    );       
   }
 }

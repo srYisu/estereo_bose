@@ -8,13 +8,11 @@ class MetodosDetallesVentas {
     required int id_producto,
     required int id_venta,
     required int cantidad,
-    required double precio_unitario,
   }) async {
     await supabase.from('detallesVentas').insert({
       'id_producto': id_producto,
       'id_venta': id_venta,
       'cantidad': cantidad,
-      'precio_unitario': precio_unitario,
     });
   }
 
@@ -27,11 +25,10 @@ class MetodosDetallesVentas {
     required int id_producto,
     required int id_venta,
     required int cantidad,
-    required double precio_unitario,
   }) async {
     await supabase
         .from('detallesVentas')
-        .update({'id_cliente': id_producto, 'id_venta': id_venta, 'cantidad': cantidad, 'precio_unitario': precio_unitario})
+        .update({'id_cliente': id_producto, 'id_venta': id_venta, 'cantidad': cantidad})
         .eq('id', id);
   }
 

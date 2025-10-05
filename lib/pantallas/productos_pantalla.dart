@@ -15,6 +15,7 @@ class _ProductosPageState extends State<ProductosPage> {
   String _searchTerm = '';
 
   void _mostrarFormulario({Map<String, dynamic>? producto}) {
+    
     final nombreController = TextEditingController(
       text: producto?['nombre'] ?? '',
     );
