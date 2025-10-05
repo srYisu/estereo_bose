@@ -14,6 +14,8 @@ class _ProductosPageState extends State<ProductosPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchTerm = '';
 
+  int _currentPage = 0; // Current page index for pagination
+
   void _mostrarFormulario({Map<String, dynamic>? producto}) {
     
     final nombreController = TextEditingController(
@@ -181,258 +183,232 @@ class _ProductosPageState extends State<ProductosPage> {
                   return Column(
                     children: [
                       Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: DataTable(
-                                  headingRowColor: MaterialStateProperty.all(
-                                    Colors.grey[900],
-                                  ),
-                                  headingTextStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  dataRowColor:
-                                      MaterialStateProperty.resolveWith<
-                                        Color?
-                                      >((Set<MaterialState> states) {
-                                        if (states.contains(
-                                          MaterialState.selected,
-                                        )) {
-                                          return Colors.grey[300];
-                                        }
-                                        return null; // Use default value for other states and odd rows
-                                      }),
-                                  columns: const [
-                                    DataColumn(label: Text('ID')),
-                                    DataColumn(label: Text('Nombre')),
-                                    DataColumn(label: Text('Categoría')),
-                                    DataColumn(label: Text('Precio')),
-                                    DataColumn(label: Text('Cantidad')),
-                                    DataColumn(label: Text('Acciones')),
-                                  ],
-                                  rows: List<DataRow>.generate(
-                                    filteredProductos.length,
-                                    (index) {
-                                      final producto = filteredProductos[index];
-                                      final bool isEvenRow = index % 2 == 0;
-                                      return DataRow(
-                                        color:
-                                            MaterialStateProperty.resolveWith<
-                                              Color?
-                                            >((Set<MaterialState> states) {
-                                              if (states.contains(
-                                                MaterialState.selected,
-                                              )) {
-                                                return Colors.grey[300];
-                                              }
-                                              return isEvenRow
-                                                  ? Colors.grey[200]
-                                                  : Colors.white;
-                                            }),
-                                        cells: [
-                                          DataCell(
-                                            Text(producto['id'].toString()),
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Altura aproximada de cada fila (ajusta según tu diseño)
+                            const double rowHeight = 56.0;
+                            // Altura de encabezado de la tabla
+                            const double headerHeight = 56.0;
+                            // Calcula cuántas filas caben
+                            final availableHeight =
+                                constraints.maxHeight - headerHeight - 40;
+                            final rowsPerPage = availableHeight ~/ rowHeight;
+
+                            // Si cambia el tamaño y la página actual ya no existe, vuelve a la página 1
+                            final totalPages =
+                                (filteredProductos.length / rowsPerPage).ceil();
+                            if (_currentPage > 0 && _currentPage >= totalPages) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                setState(() {
+                                  _currentPage = 0;
+                                });
+                              });
+                            }
+
+                            final startIndex = _currentPage * rowsPerPage;
+                            final endIndex =
+                                (startIndex + rowsPerPage) > filteredProductos.length
+                                ? filteredProductos.length
+                                : (startIndex + rowsPerPage);
+                            final pageItems = filteredProductos.sublist(
+                              startIndex,
+                              endIndex,
+                            );
+
+                            // Genera las filas de la tabla
+                            final dataRows = pageItems.asMap().entries.map((entry) {
+                              int index = entry.key;
+                              var producto = entry.value;
+                              return DataRow(
+                                color: index % 2 == 0
+                                    ? MaterialStateProperty.all(Colors.grey[200])
+                                    : MaterialStateProperty.all(Colors.white),
+                                cells: [
+                                  DataCell(Text(producto['id'].toString())),
+                                  DataCell(Text(producto['nombre'] ?? '')),
+                                  DataCell(Text(producto['categoria'] ?? '')),
+                                  DataCell(Text(producto['precio'].toString())),
+                                  DataCell(Text(producto['cantidad'].toString())),
+                                  DataCell(
+                                    Row(
+                                      children: [
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.shade100,
+                                            shape: BoxShape.circle,
                                           ),
-                                          DataCell(
-                                            Text(producto['nombre'] ?? ''),
-                                          ),
-                                          DataCell(
-                                            Text(producto['categoria'] ?? ''),
-                                          ),
-                                          DataCell(
-                                            Text(producto['precio'].toString()),
-                                          ),
-                                          DataCell(
-                                            Text(
-                                              producto['cantidad'].toString(),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.edit,
+                                              color: Colors.orange,
                                             ),
-                                          ),
-                                          DataCell(
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        Colors.orange.shade100,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                      Icons.edit,
-                                                      color: Colors.orange,
-                                                    ),
-                                                    onPressed: () =>
-                                                        _mostrarFormulario(
-                                                          producto: producto,
-                                                        ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red.shade100,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: IconButton(
-                                                    icon: const Icon(
-                                                      Icons.delete,
-                                                      color: Colors.red,
-                                                    ),
-                                                    onPressed: () =>
-                                                        _eliminarProducto(
-                                                          producto['id'],
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Pagination controls
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      // TODO: Implement previous page logic
-                                    },
-                                    icon: const Icon(
-                                      Icons.arrow_back_ios_new,
-                                      size: 16,
-                                    ),
-                                    label: const Text('Anterior'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.teal,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  for (int i = 1; i <= 3; i++)
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: i == 1
-                                            ? Colors.grey[300]
-                                            : Colors.grey[100],
-                                        child: Text(
-                                          '$i',
-                                          style: TextStyle(
-                                            color: i == 1
-                                                ? Colors.black
-                                                : Colors.grey[600],
-                                            fontWeight: FontWeight.bold,
+                                            onPressed: () =>
+                                                _mostrarFormulario(producto: producto),
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  const SizedBox(width: 8),
-                                  TextButton.icon(
-                                    onPressed: () {
-                                      // TODO: Implement next page logic
-                                    },
-                                    icon: const Icon(
-                                      Icons.arrow_forward_ios,
-                                      size: 16,
-                                    ),
-                                    label: const Text('Siguiente'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.teal,
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade100,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () async {
+                                              final confirm = await showDialog<bool>(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  title: const Text(
+                                                    "Confirmar Eliminación",
+                                                  ),
+                                                  content: const Text(
+                                                    "¿Estás seguro de que deseas eliminar este producto?",
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(context, false),
+                                                      child: const Text("Cancelar"),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () =>
+                                                          Navigator.pop(context, true),
+                                                      child: const Text("Eliminar"),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor: Colors.red,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                              if (confirm == true) {
+                                                await _eliminarProducto(producto['id']);
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
+                              );
+                            }).toList();
+
+                            // Añade filas vacías si faltan para llenar la página
+                            for (int i = dataRows.length; i < rowsPerPage; i++) {
+                              dataRows.add(
+                                DataRow(
+                                  color: i % 2 == 0
+                                      ? MaterialStateProperty.all(Colors.grey[200])
+                                      : MaterialStateProperty.all(Colors.white),
+                                  cells: const [
+                                    DataCell(Text('')),
+                                    DataCell(Text('')),
+                                    DataCell(Text('')),
+                                    DataCell(Text('')),
+                                    DataCell(Text('')),
+                                    DataCell(Text('')),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return Center(
+                              child: Card(
+                                elevation: 8,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(0),
+                                  width: 800,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: DataTable(
+                                          headingRowColor:
+                                              MaterialStateProperty.all(
+                                                Colors.grey[900],
+                                              ),
+                                          headingTextStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          columns: const [
+                                            DataColumn(label: Text('ID')),
+                                            DataColumn(label: Text('Nombre')),
+                                            DataColumn(label: Text('Categoría')),
+                                            DataColumn(label: Text('Precio')),
+                                            DataColumn(label: Text('Cantidad')),
+                                            DataColumn(label: Text('Acciones')),
+                                          ],
+                                          rows: dataRows,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.arrow_back_ios_new,
+                                            ),
+                                            onPressed: _currentPage > 0
+                                                ? () {
+                                                    setState(() {
+                                                      _currentPage--;
+                                                    });
+                                                  }
+                                                : null,
+                                          ),
+                                          for (int i = 0; i < totalPages; i++)
+                                            TextButton(
+                                              onPressed: () {
+                                                setState(() {
+                                                  _currentPage = i;
+                                                });
+                                              },
+                                              child: Text(
+                                                (i + 1).toString(),
+                                                style: TextStyle(
+                                                  fontWeight: i == _currentPage
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                                  color: i == _currentPage
+                                                      ? Colors.blue
+                                                      : null,
+                                                ),
+                                              ),
+                                            ),
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.arrow_forward_ios,
+                                            ),
+                                            onPressed: _currentPage < totalPages - 1
+                                                ? () {
+                                                    setState(() {
+                                                      _currentPage++;
+                                                    });
+                                                  }
+                                                : null,
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Container(
-                          width: 300,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text(
-                                "Productos por Categoria",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 100,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceAround,
-                                  children: productsByCategory.entries.map((
-                                    entry,
-                                  ) {
-                                    final category = entry.key;
-                                    final count = entry.value;
-                                    final barHeight = count * 10.0;
-                                    final color = category == 'Electrónica'
-                                        ? Colors.blue
-                                        : category == 'Ropa'
-                                        ? Colors.teal
-                                        : Colors.orange;
-                                    return Column(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        Container(
-                                          width: 20,
-                                          height: barHeight,
-                                          color: color,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(category),
-                                        Text(count.toString()),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                      
                     ],
                   );
                 },
