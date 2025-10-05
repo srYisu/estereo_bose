@@ -137,14 +137,14 @@ class _VentasPageState extends State<VentasPage> {
                     if (_selectedIdProducto == null) return;
                     final qty = int.tryParse(_cantidadController.text) ?? 1;
 
-                    // obtener el producto para comprobar stock (campo 'cantidad' en la tabla productos)
+                    // obtener el producto para comprobar stock
                     final producto = await productosService.obtenerProductoPorId(_selectedIdProducto!);
                     final stock = (producto?['cantidad'] as int?) ?? 0;
 
-                    // si qty >= stock no permitir la compra (según requisito)
+                    // si la cantidad es mayor al stock no permitir la compra
                     final idx = _productosAgregados.indexWhere((e) => e['id'] == _selectedIdProducto);
                     final currentQty = idx >= 0 ? (_productosAgregados[idx]['cantidad'] ?? 0) : 0;
-                    if (qty + currentQty > stock) {
+                    if (qty > stock) {
                       showDialog(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -162,10 +162,8 @@ class _VentasPageState extends State<VentasPage> {
                     }
                     setState(() {
                       if (idx >= 0) {
-                        // incrementar cantidad existente por qty
-                        _productosAgregados[idx]['cantidad'] = (_productosAgregados[idx]['cantidad'] ?? 0) + qty;
+                        _productosAgregados[idx]['cantidad'] = qty; /*+ (_productosAgregados[idx]['cantidad'] ?? 0);*/
                       } else {
-                        // añadir nuevo con cantidad = qty
                         _productosAgregados.add({'id': _selectedIdProducto!, 'cantidad': qty});
                       }
                       _cantidadController.clear();
@@ -190,7 +188,6 @@ class _VentasPageState extends State<VentasPage> {
   }
 
   void _verProductosComprados(int id) async {
-    // Obtener los detalles de venta relacionados con el id de venta
     final detalles = await detallesVentaService.obtenerDetallesVentasPorVentaId(id);
     if (detalles == null || detalles.isEmpty) {
       showDialog(
@@ -215,7 +212,7 @@ class _VentasPageState extends State<VentasPage> {
       final idProducto = detalle['id_producto'];
       final producto = await productosService.obtenerProductoPorId(idProducto);
       if (producto != null) {
-        nombresProductos.add("${producto['nombre']} - Cantidad: ${detalle['cantidad']}");
+        nombresProductos.add("${producto['nombre']}   €${producto['precio']} C/u");
       }
     }
 
@@ -232,6 +229,7 @@ class _VentasPageState extends State<VentasPage> {
             itemBuilder: (context, index) {
               return ListTile(
                 title: Text(nombresProductos[index]),
+                subtitle: Text("Cantidad: ${detalles[index]['cantidad']}"),
               );
             },
           ),
@@ -352,7 +350,7 @@ class _VentasPageState extends State<VentasPage> {
               }
 
               if (venta == null) {
-                // Insertar la venta
+                // Insertar la venta y detalles
                 await ventasService.insertarVentas(
                   id_cliente: _selectedIdCliente ?? selectedIdCliente ?? 0,
                   total: total,
@@ -378,7 +376,7 @@ class _VentasPageState extends State<VentasPage> {
                   total: total,
                 );
                 
-                // actualizar o insertar detalles según si ya existe id_detalle
+                // actualizar venta y detalles
                 for (var entry in _productosAgregados) {
                   final int? pid = entry['id'];
                   final int qty = entry['cantidad'] ?? 0;
